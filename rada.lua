@@ -1,4 +1,4 @@
--- The Strongest Battlegrounds - CANDY BETA Farm (Pumpkin Status Dot & Continuous Scanner)
+-- The Strongest Battlegrounds - CANDY BETA Farm (Ultimate Pumpkin & Combat Module)
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local CoreGui = game:GetService("CoreGui")
@@ -23,12 +23,12 @@ screenGui.Name = "TSBCandyBetaGui"
 screenGui.Parent = CoreGui
 screenGui.ResetOnSpawn = false
 
--- Thanh trạng thái nhỏ gọn nằm phía trên thanh nộ (màu chữ trắng, chấm trạng thái xám/xanh lá)
+-- Thanh trạng thái PUMPKIN nằm ở phía trên thanh nộ (Được đẩy cao lên khoảng 0.7cm ~ 25-30 pixels)
 local statusContainer = Instance.new("Frame")
 statusContainer.Size = UDim2.new(0, 110, 0, 22)
-statusContainer.Position = UDim2.new(0.5, -55, 1, -110)
+statusContainer.Position = UDim2.new(0.5, -55, 1, -145)
 statusContainer.BackgroundTransparency = 1
-statusContainer.Visible = false
+statusContainer.Visible = true
 statusContainer.Parent = screenGui
 
 local statusDot = Instance.new("Frame")
@@ -66,8 +66,8 @@ cornerBtn.CornerRadius = UDim.new(1, 0)
 cornerBtn.Parent = toggleBtn
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 280, 0, 315)
-mainFrame.Position = UDim2.new(0.5, -140, 0.5, -157)
+mainFrame.Size = UDim2.new(0, 280, 0, 375)
+mainFrame.Position = UDim2.new(0.5, -140, 0.5, -187)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 mainFrame.BackgroundTransparency = 0.1
 mainFrame.Visible = false
@@ -90,25 +90,6 @@ local titleCorner = Instance.new("UICorner")
 titleCorner.CornerRadius = UDim.new(0, 12)
 titleCorner.Parent = title
 
-local isInteracting = false
-mainFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-        isInteracting = true
-    end
-end)
-
-mainFrame.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-        isInteracting = false
-    end
-end)
-
-RunService.RenderStepped:Connect(function()
-    if isInteracting and mainFrame.Visible then
-        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-    end
-end)
-
 toggleBtn.MouseButton1Click:Connect(function()
     mainFrame.Visible = not mainFrame.Visible
 end)
@@ -116,13 +97,12 @@ end)
 local settings = {
     autoCandy = false,
     autoDoor = false,
-    autoBoss = false,
-    bossAlert = false
+    autoBossCombat = false
 }
 
 local function createFeatureToggle(name, posY, key)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, -20, 0, 45)
+    btn.Size = UDim2.new(1, -20, 0, 40)
     btn.Position = UDim2.new(0, 10, 0, posY)
     btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     btn.Text = name .. ": [OFF]"
@@ -146,17 +126,84 @@ local function createFeatureToggle(name, posY, key)
             btn.TextColor3 = Color3.fromRGB(255, 100, 100)
             btn.Text = name .. ": [OFF]"
         end
-        
-        -- Nếu bật tính năng Boss Teleport thì bật luôn hiển thị trạng thái Pumpkin trên màn hình
-        if key == "autoBoss" then
-            settings.bossAlert = settings.autoBoss
-        end
     end)
 end
 
-createFeatureToggle("CANDY FARM", 50, "autoCandy")
-createFeatureToggle("AUTOMATIC DOOR", 105, "autoDoor")
-createFeatureToggle("PENGUIN BOSS TELEPORT", 160, "autoBoss")
+createFeatureToggle("CANDY FARM", 45, "autoCandy")
+createFeatureToggle("AUTOMATIC DOOR", 90, "autoDoor")
+
+-- Nút dịch chuyển 1 lần đến Pumpkin
+local teleBossBtn = Instance.new("TextButton")
+teleBossBtn.Size = UDim2.new(1, -20, 0, 40)
+teleBossBtn.Position = UDim2.new(0, 10, 0, 135)
+teleBossBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 100)
+teleBossBtn.Text = "TELEPORT TO PUMPKIN"
+teleBossBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+teleBossBtn.TextSize = 12
+teleBossBtn.Font = Enum.Font.SourceSansBold
+teleBossBtn.Parent = mainFrame
+
+local teleCorner = Instance.new("UICorner")
+teleCorner.CornerRadius = UDim.new(0, 8)
+teleCorner.Parent = teleBossBtn
+
+createFeatureToggle("AUTO PUMPKIN COMBAT", 180, "autoBossCombat")
+
+-- Dropdown chọn thứ tự skill tự động đánh boss
+local dropdownFrame = Instance.new("Frame")
+dropdownFrame.Size = UDim2.new(1, -20, 0, 100)
+dropdownFrame.Position = UDim2.new(0, 10, 0, 225)
+dropdownFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+dropdownFrame.Visible = false
+dropdownFrame.Parent = mainFrame
+
+local dropCorner = Instance.new("UICorner")
+dropCorner.CornerRadius = UDim.new(0, 8)
+dropCorner.Parent = dropdownFrame
+
+local dropToggleBtn = Instance.new("TextButton")
+dropToggleBtn.Size = UDim2.new(1, 0, 0, 35)
+dropToggleBtn.Position = UDim2.new(0, 0, 0, 0)
+dropToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+dropToggleBtn.Text = "▼ Select Combat Skills (1->4)"
+dropToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+dropToggleBtn.TextSize = 11
+dropToggleBtn.Font = Enum.Font.SourceSansBold
+dropToggleBtn.Parent = mainFrame
+
+local dropToggleCorner = Instance.new("UICorner")
+dropToggleCorner.CornerRadius = UDim.new(0, 8)
+dropToggleCorner.Parent = dropToggleBtn
+
+local skillListOpen = false
+dropToggleBtn.MouseButton1Click:Connect(function()
+    skillListOpen = not skillListOpen
+    dropdownFrame.Visible = skillListOpen
+    if skillListOpen then
+        dropToggleBtn.Text = "▲ Select Combat Skills (1->4)"
+    else
+        dropToggleBtn.Text = "▼ Select Combat Skills (1->4)"
+    end
+end)
+
+-- Tạo 4 ô chọn skill (Skill 1, 2, 3, 4)
+local selectedSkills = {1, 2, 3, 4} -- Mặc định phím tương ứng: 1, 2, 3, 4 hoặc click chuột
+local skillKeys = {"1", "2", "3", "4"}
+for i = 1, 4 do
+    local sBtn = Instance.new("TextButton")
+    sBtn.Size = UDim2.new(1, -10, 0, 20)
+    sBtn.Position = UDim2.new(0, 5, 0, 5 + (i - 1) * 23)
+    sBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 0)
+    sBtn.Text = "Slot " .. i .. " : Key [" .. skillKeys[i] .. "]"
+    sBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    sBtn.TextSize = 10
+    sBtn.Font = Enum.Font.SourceSansBold
+    sBtn.Parent = dropdownFrame
+    
+    local sc = Instance.new("UICorner")
+    sc.CornerRadius = UDim.new(0, 4)
+    sc.Parent = sBtn
+end
 
 local validCandies = {
     ["DarkOrangeCandy1"] = true,
@@ -175,7 +222,6 @@ local validCandies = {
 
 local openedDoors = {}
 
--- Hàm quét liên tục và trực tiếp để bắt chính xác tọa độ mới nhất của Penyta
 local function getBossTarget()
     local liveFolder = Workspace:FindFirstChild("Live")
     if liveFolder then
@@ -199,12 +245,19 @@ local function getBossTarget()
     return nil, nil
 end
 
+-- Chức năng Teleport 1 lần khi bấm nút (Không giữ chuột, không tự động tele liên tục)
+teleBossBtn.MouseButton1Click:Connect(function()
+    local _, bossPart = getBossTarget()
+    local char = player.Character
+    if char and char:FindFirstChild("HumanoidRootPart") and bossPart then
+        char.HumanoidRootPart.CFrame = bossPart.CFrame * CFrame.new(0, 0, 3)
+    end
+end)
+
+-- Chỉ giữ trạng thái PlatformStand = false, giữ trọng lực và cho phép nhảy bình thường không bị chậm
 RunService.Stepped:Connect(function()
     local char = player.Character
     if char and char:FindFirstChild("HumanoidRootPart") then
-        local hrp = char.HumanoidRootPart
-        hrp.Velocity = Vector3.new(0, 0, 0)
-        hrp.RotVelocity = Vector3.new(0, 0, 0)
         local humanoid = char:FindFirstChildOfClass("Humanoid")
         if humanoid then
             humanoid.PlatformStand = false
@@ -212,37 +265,55 @@ RunService.Stepped:Connect(function()
         end
     end
     
-    -- Quét liên tục trạng thái của Boss để cập nhật chấm màu trên thanh nộ
+    -- Cập nhật chấm đèn trạng thái Pumpkin liên tục
     local bossModel, bossPart = getBossTarget()
-    if settings.autoBoss then
-        statusContainer.Visible = true
-        if bossModel and bossPart then
-            statusDot.BackgroundColor3 = Color3.fromRGB(0, 255, 0) -- Xanh lá khi có boss
-        else
-            statusDot.BackgroundColor3 = Color3.fromRGB(120, 120, 120) -- Xám khi chưa spawn
-        end
+    if bossModel and bossPart then
+        statusDot.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
     else
-        statusContainer.Visible = false
+        statusDot.BackgroundColor3 = Color3.fromRGB(120, 120, 120)
     end
 end)
 
+-- Vòng lặp chính xử lý Auto Farm Candy, Door và Auto Combat Pumpkin bay theo sau lưng
 task.spawn(function()
+    local skillIndex = 1
+    local skillDelay = 0
+    
     while true do
         task.wait(0.03)
         local char = player.Character
         if char and char:FindFirstChild("HumanoidRootPart") then
             local hrp = char.HumanoidRootPart
             
-            -- PENGUIN BOSS TELEPORT (Quét liên tục vị trí mới nhất của Boss để bám theo)
-            if settings.autoBoss then
+            -- AUTO PUMPKIN COMBAT (Bay theo sau lưng boss, cưỡng chế quay mặt vào lưng boss, tung skill và đánh liên tục)
+            if settings.autoBossCombat then
                 local bossModel, bossPart = getBossTarget()
                 if bossModel and bossPart then
-                    hrp.CFrame = bossPart.CFrame * CFrame.new(0, 0, 3)
+                    -- Tính toán vị trí bám ngay sau lưng boss (CFrame hướng về boss, lùi ra sau 4 stud)
+                    local bossCF = bossPart.CFrame
+                    local behindBossCF = bossCF * CFrame.new(0, 0, 4) * CFrame.Angles(0, math.rad(180), 0)
+                    hrp.CFrame = behindBossCF
+                    
+                    -- Gửi tín hiệu đánh thường (Click chuột trái)
                     pcall(function()
                         VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1)
-                        task.wait(0.02)
+                        task.wait(0.01)
                         VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 1)
                     end)
+                    
+                    -- Xoay vòng sử dụng skill theo thứ tự đã chọn
+                    skillDelay = skillDelay + 1
+                    if skillDelay >= 15 then -- Khoảng cách thời gian giữa các skill
+                        skillDelay = 0
+                        local keyToPress = skillKeys[skillIndex]
+                        pcall(function()
+                            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode[string.upper(keyToPress)], false, game)
+                            task.wait(0.02)
+                            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode[string.upper(keyToPress)], false, game)
+                        end)
+                        skillIndex = skillIndex % 4 + 1
+                    end
+                    
                     continue
                 end
             end
@@ -348,4 +419,4 @@ task.spawn(function()
     end
 end)
 
-print("CANDY BETA (Pumpkin Status Indicator) Loaded Successfully!")
+print("CANDY BETA (Ultimate Combat & Movement Fix) Loaded Successfully!")
